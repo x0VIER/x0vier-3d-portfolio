@@ -93,7 +93,7 @@ Successfully created and deployed a cutting-edge Linux terminal-style portfolio 
 ## 🎨 **Design Inspiration Sources**
 
 ### Reference Sites Analyzed
-1. **https://vierport7.manus.space/** - Linux terminal aesthetic
+1. **https://vierport7.example.com/** - Linux terminal aesthetic
 2. **https://brittanychiang.com/** - Professional layout and structure
 3. **https://terminal.satnaing.dev/** - Interactive terminal commands
 4. **Awwwards Portfolio Collection** - Modern design trends
