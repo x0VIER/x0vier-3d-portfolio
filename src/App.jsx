@@ -1,516 +1,611 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Text, Float, Environment, Stars } from '@react-three/drei'
-import { Button } from '@/components/ui/button.jsx'
-import { Badge } from '@/components/ui/badge.jsx'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
-import { Github, Mail, ExternalLink, Code, Cloud, Shield, Database, Terminal, Cpu } from 'lucide-react'
+import { OrbitControls, Text, Float, Environment, Box, Sphere } from '@react-three/drei'
 import { motion, AnimatePresence } from 'framer-motion'
+import { 
+  Terminal, 
+  User, 
+  Folder, 
+  Code, 
+  Cloud, 
+  Shield, 
+  Database, 
+  Cpu, 
+  Github, 
+  Mail, 
+  ExternalLink,
+  ChevronRight,
+  Activity,
+  Server,
+  Zap
+} from 'lucide-react'
 import './App.css'
 
-// Import assets
-import profileImage from './assets/x0vier_profile_3d.png'
-import heroBackground from './assets/hero_background.png'
-import pythonIcon from './assets/python_icon_3d.png'
-import awsIcon from './assets/aws_icon_3d.png'
-import jsIcon from './assets/javascript_icon_3d.png'
-
-// 3D Avatar Component
-function Avatar3D() {
+// 3D Terminal Cube Component
+function TerminalCube({ position, color, onClick, children }) {
   return (
-    <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
-      <mesh position={[0, 0, 0]}>
-        <sphereGeometry args={[1, 32, 32]} />
+    <Float speed={2} rotationIntensity={0.3} floatIntensity={0.2}>
+      <Box 
+        position={position} 
+        args={[1, 1, 1]} 
+        onClick={onClick}
+        onPointerOver={(e) => e.object.scale.setScalar(1.1)}
+        onPointerOut={(e) => e.object.scale.setScalar(1)}
+      >
         <meshStandardMaterial 
-          color="#4f46e5" 
+          color={color} 
           metalness={0.8} 
           roughness={0.2}
-          emissive="#1e1b4b"
+          emissive={color}
           emissiveIntensity={0.2}
         />
-      </mesh>
-      <Text
-        position={[0, -1.5, 0]}
-        fontSize={0.3}
-        color="#ffffff"
-        anchorX="center"
-        anchorY="middle"
-        font="/fonts/inter-bold.woff"
-      >
-        V VIER
-      </Text>
+      </Box>
+      {children && (
+        <Text
+          position={[position[0], position[1] - 1.5, position[2]]}
+          fontSize={0.2}
+          color="#ffffff"
+          anchorX="center"
+          anchorY="middle"
+        >
+          {children}
+        </Text>
+      )}
     </Float>
   )
 }
 
-// 3D Skills Visualization
-function SkillsNetwork() {
+// 3D Skills Network
+function SkillsNetwork3D() {
   const skills = [
-    { name: 'Python', position: [-2, 1, 0], color: '#3776ab' },
-    { name: 'AWS', position: [2, 1, 0], color: '#ff9900' },
-    { name: 'JavaScript', position: [0, 2, 0], color: '#f7df1e' },
-    { name: 'Docker', position: [-1, -1, 0], color: '#2496ed' },
-    { name: 'Linux', position: [1, -1, 0], color: '#fcc624' },
-    { name: 'Security', position: [0, -2, 0], color: '#e74c3c' }
+    { name: 'Python', position: [-2, 1, 0], color: '#8b5cf6' },
+    { name: 'AWS', position: [2, 1, 0], color: '#a855f7' },
+    { name: 'JavaScript', position: [0, 2, 0], color: '#9333ea' },
+    { name: 'Docker', position: [-1, -1, 0], color: '#7c3aed' },
+    { name: 'Linux', position: [1, -1, 0], color: '#6d28d9' },
+    { name: 'Security', position: [0, -2, 0], color: '#5b21b6' }
   ]
 
   return (
     <group>
       {skills.map((skill, index) => (
-        <Float key={skill.name} speed={1 + index * 0.2} rotationIntensity={0.3}>
-          <mesh position={skill.position}>
-            <sphereGeometry args={[0.3, 16, 16]} />
-            <meshStandardMaterial 
-              color={skill.color} 
-              emissive={skill.color}
-              emissiveIntensity={0.3}
-            />
-          </mesh>
-          <Text
-            position={[skill.position[0], skill.position[1] - 0.6, skill.position[2]]}
-            fontSize={0.15}
-            color="#ffffff"
-            anchorX="center"
-            anchorY="middle"
-          >
-            {skill.name}
-          </Text>
-        </Float>
+        <TerminalCube
+          key={skill.name}
+          position={skill.position}
+          color={skill.color}
+          onClick={() => console.log(`Clicked ${skill.name}`)}
+        >
+          {skill.name}
+        </TerminalCube>
       ))}
-      
-      {/* Connection lines */}
-      {skills.map((skill, i) => 
-        skills.slice(i + 1).map((otherSkill, j) => (
-          <line key={`${i}-${j}`}>
-            <bufferGeometry>
-              <bufferAttribute
-                attach="attributes-position"
-                count={2}
-                array={new Float32Array([
-                  ...skill.position,
-                  ...otherSkill.position
-                ])}
-                itemSize={3}
-              />
-            </bufferGeometry>
-            <lineBasicMaterial color="#4f46e5" opacity={0.3} transparent />
-          </line>
-        ))
-      )}
     </group>
   )
 }
 
-// Project data based on GitHub analysis
-const projects = [
-  {
-    id: 1,
-    name: "Python Automation Suite",
-    description: "IT automation scripts for file organization, log analysis, and system health checks",
-    language: "Python",
-    category: "Automation",
-    icon: <Terminal className="w-6 h-6" />,
-    featured: true
-  },
-  {
-    id: 2,
-    name: "AWS Cloud Infrastructure",
-    description: "Complete AWS solutions including S3, EC2, Lambda, and CloudFormation IaC",
-    language: "CloudFormation",
-    category: "Cloud",
-    icon: <Cloud className="w-6 h-6" />,
-    featured: true
-  },
-  {
-    id: 3,
-    name: "Cybersecurity Scanner",
-    description: "Vulnerability scanning and analysis using Nmap and OpenVAS",
-    language: "Python",
-    category: "Security",
-    icon: <Shield className="w-6 h-6" />,
-    featured: true
-  },
-  {
-    id: 4,
-    name: "Data Analysis Pipeline",
-    description: "Python data analysis using Pandas, Matplotlib, and Seaborn",
-    language: "Python",
-    category: "Data",
-    icon: <Database className="w-6 h-6" />,
-    featured: false
-  },
-  {
-    id: 5,
-    name: "PowerShell Automation",
-    description: "Windows automation for user management and system administration",
-    language: "PowerShell",
-    category: "Automation",
-    icon: <Cpu className="w-6 h-6" />,
-    featured: false
-  },
-  {
-    id: 6,
-    name: "Docker Containerization",
-    description: "Container orchestration and management solutions",
-    language: "Docker",
-    category: "DevOps",
-    icon: <Code className="w-6 h-6" />,
-    featured: false
-  }
-]
-
-function App() {
-  const [currentSection, setCurrentSection] = useState('hero')
-  const [isDarkMode, setIsDarkMode] = useState(true)
-  const [selectedProject, setSelectedProject] = useState(null)
+// Terminal Command Component
+function TerminalCommand({ command, output, delay = 0 }) {
+  const [isVisible, setIsVisible] = useState(false)
+  const [typedCommand, setTypedCommand] = useState('')
+  const [showOutput, setShowOutput] = useState(false)
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', isDarkMode)
-  }, [isDarkMode])
+    const timer = setTimeout(() => setIsVisible(true), delay)
+    return () => clearTimeout(timer)
+  }, [delay])
 
-  const scrollToSection = (section) => {
-    setCurrentSection(section)
-    document.getElementById(section)?.scrollIntoView({ behavior: 'smooth' })
+  useEffect(() => {
+    if (!isVisible) return
+    
+    let i = 0
+    const typeCommand = () => {
+      if (i < command.length) {
+        setTypedCommand(command.slice(0, i + 1))
+        i++
+        setTimeout(typeCommand, 50)
+      } else {
+        setTimeout(() => setShowOutput(true), 300)
+      }
+    }
+    typeCommand()
+  }, [isVisible, command])
+
+  return (
+    <div className="mb-4">
+      <div className="flex items-center text-green-400 font-mono">
+        <span className="text-purple-400">x0vier@portfolio</span>
+        <span className="text-white">:</span>
+        <span className="text-blue-400">~</span>
+        <span className="text-white">$ </span>
+        <span className="text-green-400">{typedCommand}</span>
+        {isVisible && typedCommand.length < command.length && (
+          <span className="animate-pulse">|</span>
+        )}
+      </div>
+      {showOutput && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-2 text-gray-300"
+        >
+          {output}
+        </motion.div>
+      )}
+    </div>
+  )
+}
+
+// Project Card Component
+function ProjectCard({ project, index }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -50 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.1 }}
+      whileHover={{ scale: 1.02, y: -5 }}
+      className="bg-gray-900/50 border border-purple-500/30 rounded-lg p-6 backdrop-blur-sm hover:border-purple-400/50 transition-all duration-300"
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-purple-600/20 rounded-lg flex items-center justify-center">
+            {project.icon}
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-white">{project.name}</h3>
+            <p className="text-purple-400 text-sm">{project.category}</p>
+          </div>
+        </div>
+        <ExternalLink className="w-5 h-5 text-gray-400 hover:text-purple-400 cursor-pointer transition-colors" />
+      </div>
+      
+      <p className="text-gray-300 text-sm mb-4">{project.description}</p>
+      
+      <div className="flex flex-wrap gap-2 mb-4">
+        {project.technologies.map((tech) => (
+          <span
+            key={tech}
+            className="px-2 py-1 bg-purple-600/20 text-purple-300 text-xs rounded border border-purple-500/30"
+          >
+            {tech}
+          </span>
+        ))}
+      </div>
+      
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-gray-400">{project.year}</span>
+        <div className="flex items-center space-x-4">
+          <span className="text-purple-400">★ {project.stars}</span>
+          <span className="text-green-400">● {project.status}</span>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+// Main App Component
+function App() {
+  const [currentSection, setCurrentSection] = useState('home')
+  const [terminalHistory, setTerminalHistory] = useState([])
+  const [currentCommand, setCurrentCommand] = useState('')
+  const terminalRef = useRef(null)
+
+  const projects = [
+    {
+      name: "Python Automation Suite",
+      description: "Comprehensive IT automation toolkit with file organization, log analysis, and system health monitoring capabilities.",
+      category: "Automation",
+      technologies: ["Python", "PowerShell", "Linux", "Windows"],
+      year: "2024",
+      stars: "15",
+      status: "Active",
+      icon: <Terminal className="w-5 h-5 text-purple-400" />
+    },
+    {
+      name: "AWS Cloud Infrastructure",
+      description: "Enterprise-grade cloud solutions using EC2, S3, Lambda, and Infrastructure as Code with CloudFormation.",
+      category: "Cloud",
+      technologies: ["AWS", "CloudFormation", "Lambda", "S3"],
+      year: "2024",
+      stars: "23",
+      status: "Active",
+      icon: <Cloud className="w-5 h-5 text-purple-400" />
+    },
+    {
+      name: "Cybersecurity Scanner",
+      description: "Advanced vulnerability assessment tool using Nmap and OpenVAS for comprehensive security analysis.",
+      category: "Security",
+      technologies: ["Python", "Nmap", "OpenVAS", "Security"],
+      year: "2024",
+      stars: "31",
+      status: "Active",
+      icon: <Shield className="w-5 h-5 text-purple-400" />
+    },
+    {
+      name: "Data Analysis Pipeline",
+      description: "Robust data processing system using Pandas, Matplotlib, and Seaborn for advanced analytics.",
+      category: "Data Science",
+      technologies: ["Python", "Pandas", "Matplotlib", "Seaborn"],
+      year: "2024",
+      stars: "18",
+      status: "Active",
+      icon: <Database className="w-5 h-5 text-purple-400" />
+    },
+    {
+      name: "Docker Orchestration",
+      description: "Container management and orchestration solutions for scalable application deployment.",
+      category: "DevOps",
+      technologies: ["Docker", "Kubernetes", "CI/CD", "DevOps"],
+      year: "2024",
+      stars: "27",
+      status: "Active",
+      icon: <Server className="w-5 h-5 text-purple-400" />
+    },
+    {
+      name: "AI-Powered IT Tools",
+      description: "Machine learning solutions for IT automation, predictive maintenance, and intelligent monitoring.",
+      category: "AI/ML",
+      technologies: ["Python", "TensorFlow", "AI", "ML"],
+      year: "2024",
+      stars: "42",
+      status: "Active",
+      icon: <Zap className="w-5 h-5 text-purple-400" />
+    }
+  ]
+
+  const skills = [
+    { name: "Python", level: 95, projects: 18, icon: <Code className="w-4 h-4" /> },
+    { name: "AWS", level: 90, projects: 12, icon: <Cloud className="w-4 h-4" /> },
+    { name: "JavaScript", level: 85, projects: 7, icon: <Code className="w-4 h-4" /> },
+    { name: "Linux", level: 88, projects: 15, icon: <Terminal className="w-4 h-4" /> },
+    { name: "Security", level: 82, projects: 8, icon: <Shield className="w-4 h-4" /> },
+    { name: "Docker", level: 87, projects: 10, icon: <Server className="w-4 h-4" /> },
+    { name: "PowerShell", level: 90, projects: 4, icon: <Terminal className="w-4 h-4" /> },
+    { name: "Database", level: 78, projects: 6, icon: <Database className="w-4 h-4" /> }
+  ]
+
+  const commands = {
+    help: () => "Available commands: whoami, ls, cat, cd, skills, projects, contact, clear",
+    whoami: () => "V Vier (x0VIER) - IT Specialist & Automation Expert",
+    ls: () => "about.txt  skills/  projects/  experience/  contact.txt",
+    clear: () => { setTerminalHistory([]); return "" },
+    skills: () => setCurrentSection('skills'),
+    projects: () => setCurrentSection('projects'),
+    contact: () => setCurrentSection('contact'),
+    about: () => setCurrentSection('about')
+  }
+
+  const handleCommand = (cmd) => {
+    const command = cmd.toLowerCase().trim()
+    const output = commands[command] ? commands[command]() : `Command not found: ${command}`
+    
+    if (output) {
+      setTerminalHistory(prev => [...prev, { command: cmd, output }])
+    }
+    setCurrentCommand('')
+  }
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleCommand(currentCommand)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white overflow-x-hidden">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-md border-b border-white/10">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <img src={profileImage} alt="V Vier" className="w-10 h-10 rounded-full" />
-              <span className="text-xl font-bold">V VIER</span>
-            </div>
-            
-            <div className="hidden md:flex items-center space-x-8">
-              <button onClick={() => scrollToSection('hero')} className="hover:text-purple-400 transition-colors">Home</button>
-              <button onClick={() => scrollToSection('about')} className="hover:text-purple-400 transition-colors">About</button>
-              <button onClick={() => scrollToSection('skills')} className="hover:text-purple-400 transition-colors">Skills</button>
-              <button onClick={() => scrollToSection('projects')} className="hover:text-purple-400 transition-colors">Projects</button>
-              <button onClick={() => scrollToSection('contact')} className="hover:text-purple-400 transition-colors">Contact</button>
-            </div>
+    <div className="min-h-screen bg-black text-white overflow-hidden">
+      {/* Background 3D Scene */}
+      <div className="fixed inset-0 z-0">
+        <Canvas camera={{ position: [0, 0, 10], fov: 75 }}>
+          <ambientLight intensity={0.3} />
+          <pointLight position={[10, 10, 10]} color="#8b5cf6" intensity={0.5} />
+          <pointLight position={[-10, -10, -10]} color="#a855f7" intensity={0.3} />
+          
+          {/* Floating particles */}
+          {Array.from({ length: 50 }).map((_, i) => (
+            <Sphere key={i} position={[
+              (Math.random() - 0.5) * 20,
+              (Math.random() - 0.5) * 20,
+              (Math.random() - 0.5) * 20
+            ]} args={[0.02]}>
+              <meshStandardMaterial color="#8b5cf6" emissive="#8b5cf6" emissiveIntensity={0.5} />
+            </Sphere>
+          ))}
+          
+          <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.5} />
+          <Environment preset="night" />
+        </Canvas>
+      </div>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className="border-white/20 hover:bg-white/10"
-            >
-              {isDarkMode ? '☀️' : '🌙'}
-            </Button>
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero Section */}
-      <section id="hero" className="relative h-screen flex items-center justify-center">
-        <div className="absolute inset-0 z-0">
-          <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
-            <ambientLight intensity={0.5} />
-            <pointLight position={[10, 10, 10]} />
-            <Stars radius={300} depth={60} count={20000} factor={7} saturation={0} fade />
-            <Avatar3D />
-            <OrbitControls enableZoom={false} enablePan={false} />
-            <Environment preset="night" />
-          </Canvas>
-        </div>
-        
-        <div className="relative z-10 text-center max-w-4xl mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1 }}
-          >
-            <h1 className="text-6xl md:text-8xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-              V VIER
-            </h1>
-            <p className="text-xl md:text-2xl mb-8 text-gray-300">
-              IT Specialist & Automation Expert
-            </p>
-            <p className="text-lg mb-12 text-gray-400 max-w-2xl mx-auto">
-              Certified IT Help Desk Specialist with expertise in Python automation, 
-              AWS cloud services, and system administration. Passionate about solving 
-              technical challenges through innovative automation solutions.
-            </p>
-            
-            <div className="flex flex-wrap justify-center gap-4">
-              <Button 
-                size="lg" 
-                onClick={() => scrollToSection('projects')}
-                className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700"
-              >
-                View Projects
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                onClick={() => scrollToSection('contact')}
-                className="border-white/20 hover:bg-white/10"
-              >
-                Get In Touch
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* About Section */}
-      <section id="about" className="py-20 px-6">
-        <div className="container mx-auto max-w-4xl">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-4xl font-bold text-center mb-12">About Me</h2>
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div>
+      {/* Main Layout */}
+      <div className="relative z-10 flex h-screen">
+        {/* Left Sidebar - Terminal Style */}
+        <div className="w-80 bg-gray-900/90 backdrop-blur-md border-r border-purple-500/30 flex flex-col">
+          {/* Header */}
+          <div className="p-6 border-b border-purple-500/30">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 rounded-lg overflow-hidden border border-purple-500/30">
                 <img 
-                  src={profileImage} 
-                  alt="V Vier Profile" 
-                  className="w-full max-w-md mx-auto rounded-2xl shadow-2xl"
+                  src="/src/assets/x0vier_hexagon_logo.png" 
+                  alt="x0VIER Logo" 
+                  className="w-full h-full object-cover"
                 />
               </div>
-              <div className="space-y-6">
-                <p className="text-lg text-gray-300">
-                  As a Certified IT Specialist with hands-on experience in help desk operations, 
-                  I specialize in solving complex technical issues and supporting users across 
-                  diverse environments.
-                </p>
-                <p className="text-lg text-gray-300">
-                  My passion lies in automation and cloud technologies, with extensive experience 
-                  in Python scripting, AWS services, and system administration. I've developed 
-                  99+ repositories covering everything from basic automation to advanced cloud 
-                  infrastructure.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">Python Expert</Badge>
-                  <Badge variant="secondary">AWS Certified</Badge>
-                  <Badge variant="secondary">IT Support</Badge>
-                  <Badge variant="secondary">Automation</Badge>
-                  <Badge variant="secondary">Cloud Architecture</Badge>
-                </div>
+              <div>
+                <h1 className="text-xl font-bold text-white">x0VIER</h1>
+                <p className="text-purple-400 text-sm">IT Specialist</p>
               </div>
             </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Skills Section */}
-      <section id="skills" className="py-20 px-6 bg-black/20">
-        <div className="container mx-auto max-w-6xl">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-4xl font-bold text-center mb-12">Skills & Technologies</h2>
             
-            <div className="h-96 mb-12">
-              <Canvas camera={{ position: [0, 0, 8], fov: 75 }}>
-                <ambientLight intensity={0.6} />
-                <pointLight position={[10, 10, 10]} />
-                <SkillsNetwork />
-                <OrbitControls enableZoom={false} />
-                <Environment preset="night" />
-              </Canvas>
+            <div className="flex items-center space-x-2 text-sm">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-green-400">ONLINE</span>
             </div>
+          </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
-              <Card className="bg-white/5 border-white/10">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <img src={pythonIcon} alt="Python" className="w-8 h-8" />
-                    Programming
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Python</span>
-                      <span className="text-purple-400">Expert</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>JavaScript</span>
-                      <span className="text-purple-400">Advanced</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>PowerShell</span>
-                      <span className="text-purple-400">Advanced</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/5 border-white/10">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <img src={awsIcon} alt="AWS" className="w-8 h-8" />
-                    Cloud & DevOps
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>AWS Services</span>
-                      <span className="text-purple-400">Expert</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Docker</span>
-                      <span className="text-purple-400">Advanced</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Linux Admin</span>
-                      <span className="text-purple-400">Advanced</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/5 border-white/10">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="w-8 h-8 text-red-400" />
-                    Security & IT
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Vulnerability Scanning</span>
-                      <span className="text-purple-400">Expert</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>IT Support</span>
-                      <span className="text-purple-400">Expert</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Network Security</span>
-                      <span className="text-purple-400">Advanced</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Projects Section */}
-      <section id="projects" className="py-20 px-6">
-        <div className="container mx-auto max-w-6xl">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-4xl font-bold text-center mb-12">Featured Projects</h2>
-            <p className="text-center text-gray-400 mb-12">
-              Showcasing 6 of my 99+ repositories - from automation scripts to cloud infrastructure
-            </p>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {projects.map((project) => (
-                <motion.div
-                  key={project.id}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+          {/* Navigation */}
+          <div className="flex-1 p-6">
+            <div className="space-y-2">
+              {[
+                { id: 'about', label: 'About', icon: <User className="w-4 h-4" /> },
+                { id: 'skills', label: 'Skills', icon: <Code className="w-4 h-4" /> },
+                { id: 'projects', label: 'Projects', icon: <Folder className="w-4 h-4" /> },
+                { id: 'contact', label: 'Contact', icon: <Mail className="w-4 h-4" /> }
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setCurrentSection(item.id)}
+                  className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 ${
+                    currentSection === item.id
+                      ? 'bg-purple-600/20 text-purple-400 border border-purple-500/30'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                  }`}
                 >
-                  <Card className="bg-white/5 border-white/10 hover:bg-white/10 transition-all duration-300 cursor-pointer h-full">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        {project.icon}
-                        <Badge variant={project.featured ? "default" : "secondary"}>
-                          {project.language}
-                        </Badge>
-                      </div>
-                      <CardTitle className="text-xl">{project.name}</CardTitle>
-                      <CardDescription className="text-gray-400">
-                        {project.description}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between">
-                        <Badge variant="outline" className="border-purple-400 text-purple-400">
-                          {project.category}
-                        </Badge>
-                        <Button variant="ghost" size="sm">
-                          <ExternalLink className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
+                  {item.icon}
+                  <span>{item.label}</span>
+                  <ChevronRight className="w-4 h-4 ml-auto" />
+                </button>
               ))}
             </div>
+          </div>
 
-            <div className="text-center mt-12">
-              <Button 
-                variant="outline" 
-                size="lg"
-                className="border-white/20 hover:bg-white/10"
-                onClick={() => window.open('https://github.com/x0VIER', '_blank')}
-              >
-                <Github className="w-5 h-5 mr-2" />
-                View All 99+ Projects on GitHub
-              </Button>
+          {/* Terminal Input */}
+          <div className="p-4 border-t border-purple-500/30">
+            <div className="flex items-center space-x-2 text-sm font-mono">
+              <span className="text-purple-400">x0vier@portfolio</span>
+              <span className="text-white">:</span>
+              <span className="text-blue-400">~</span>
+              <span className="text-white">$</span>
+              <input
+                ref={terminalRef}
+                value={currentCommand}
+                onChange={(e) => setCurrentCommand(e.target.value)}
+                onKeyPress={handleKeyPress}
+                className="flex-1 bg-transparent outline-none text-green-400"
+                placeholder="type 'help' for commands"
+              />
             </div>
-          </motion.div>
-        </div>
-      </section>
+          </div>
 
-      {/* Contact Section */}
-      <section id="contact" className="py-20 px-6 bg-black/20">
-        <div className="container mx-auto max-w-4xl">
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-4xl font-bold text-center mb-12">Get In Touch</h2>
-            <div className="text-center space-y-8">
-              <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-                Ready to collaborate on your next project? Let's discuss how my expertise 
-                in automation, cloud services, and IT support can help solve your technical challenges.
-              </p>
-              
-              <div className="flex flex-wrap justify-center gap-6">
-                <Button 
-                  size="lg"
-                  onClick={() => window.open('https://github.com/x0VIER', '_blank')}
-                  className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700"
-                >
-                  <Github className="w-5 h-5 mr-2" />
-                  GitHub Profile
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  className="border-white/20 hover:bg-white/10"
-                >
-                  <Mail className="w-5 h-5 mr-2" />
-                  Send Email
-                </Button>
-              </div>
+          {/* Social Links */}
+          <div className="p-4 border-t border-purple-500/30">
+            <div className="flex space-x-4">
+              <a href="https://github.com/x0VIER" className="text-gray-400 hover:text-purple-400 transition-colors">
+                <Github className="w-5 h-5" />
+              </a>
+              <a href="#" className="text-gray-400 hover:text-purple-400 transition-colors">
+                <Mail className="w-5 h-5" />
+              </a>
+              <a href="#" className="text-gray-400 hover:text-purple-400 transition-colors">
+                <Activity className="w-5 h-5" />
+              </a>
             </div>
-          </motion.div>
+          </div>
         </div>
-      </section>
 
-      {/* Footer */}
-      <footer className="py-8 px-6 border-t border-white/10">
-        <div className="container mx-auto text-center">
-          <p className="text-gray-400">
-            © 2025 V Vier (x0VIER). Built with React, Three.js, and passion for technology.
-          </p>
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-8">
+            <AnimatePresence mode="wait">
+              {currentSection === 'about' && (
+                <motion.div
+                  key="about"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-8"
+                >
+                  <div>
+                    <TerminalCommand 
+                      command="cat about.txt"
+                      output={
+                        <div className="space-y-4">
+                          <div className="flex items-center space-x-6 mb-6">
+                            <div className="w-24 h-24 rounded-lg overflow-hidden border-2 border-purple-500/50">
+                              <img 
+                                src="/src/assets/x0vier_3d_profile_logo.png" 
+                                alt="x0VIER 3D Profile" 
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div>
+                              <h2 className="text-3xl font-bold text-white mb-2">V Vier</h2>
+                              <p className="text-purple-400 text-lg">IT Specialist & Automation Expert</p>
+                            </div>
+                          </div>
+                          <p className="text-gray-300 leading-relaxed">
+                            Certified IT Help Desk Specialist with hands-on experience solving technical issues 
+                            and supporting users. Expert in troubleshooting, automation, and cloud technologies.
+                          </p>
+                          <p className="text-gray-300 leading-relaxed">
+                            Passionate about infrastructure automation, cloud architecture, and enterprise system 
+                            administration. Specializing in Python automation, AWS cloud services, and AI-powered IT tools.
+                          </p>
+                          <div className="grid grid-cols-3 gap-4 mt-6">
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-purple-400">99+</div>
+                              <div className="text-sm text-gray-400">Repositories</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-purple-400">5</div>
+                              <div className="text-sm text-gray-400">Followers</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-purple-400">10</div>
+                              <div className="text-sm text-gray-400">Following</div>
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    />
+                  </div>
+                </motion.div>
+              )}
+
+              {currentSection === 'skills' && (
+                <motion.div
+                  key="skills"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-8"
+                >
+                  <TerminalCommand 
+                    command="ls -la skills/"
+                    output={
+                      <div className="space-y-6">
+                        <h2 className="text-2xl font-bold text-white mb-6">Technical Skills</h2>
+                        
+                        {/* 3D Skills Visualization */}
+                        <div className="h-64 mb-8 bg-gray-900/30 rounded-lg border border-purple-500/30">
+                          <Canvas camera={{ position: [0, 0, 6], fov: 75 }}>
+                            <ambientLight intensity={0.6} />
+                            <pointLight position={[10, 10, 10]} color="#8b5cf6" />
+                            <SkillsNetwork3D />
+                            <OrbitControls enableZoom={false} />
+                            <Environment preset="night" />
+                          </Canvas>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          {skills.map((skill, index) => (
+                            <motion.div
+                              key={skill.name}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.1 }}
+                              className="bg-gray-900/50 p-4 rounded-lg border border-purple-500/30"
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                  {skill.icon}
+                                  <span className="text-white font-medium">{skill.name}</span>
+                                </div>
+                                <span className="text-purple-400 text-sm">{skill.level}%</span>
+                              </div>
+                              <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${skill.level}%` }}
+                                  transition={{ delay: index * 0.1 + 0.5, duration: 1 }}
+                                  className="bg-gradient-to-r from-purple-600 to-purple-400 h-2 rounded-full"
+                                />
+                              </div>
+                              <p className="text-gray-400 text-xs">{skill.projects} projects</p>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </div>
+                    }
+                  />
+                </motion.div>
+              )}
+
+              {currentSection === 'projects' && (
+                <motion.div
+                  key="projects"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-8"
+                >
+                  <TerminalCommand 
+                    command="find projects/ -type f -name '*.md' | head -6"
+                    output={
+                      <div className="space-y-6">
+                        <h2 className="text-2xl font-bold text-white mb-6">Featured Projects</h2>
+                        <p className="text-gray-400 mb-6">Showcasing 6 of my 99+ repositories</p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {projects.map((project, index) => (
+                            <ProjectCard key={project.name} project={project} index={index} />
+                          ))}
+                        </div>
+                        
+                        <div className="text-center mt-8">
+                          <a
+                            href="https://github.com/x0VIER"
+                            className="inline-flex items-center space-x-2 px-6 py-3 bg-purple-600/20 border border-purple-500/30 rounded-lg text-purple-400 hover:bg-purple-600/30 transition-all duration-200"
+                          >
+                            <Github className="w-5 h-5" />
+                            <span>View All 99+ Projects</span>
+                          </a>
+                        </div>
+                      </div>
+                    }
+                  />
+                </motion.div>
+              )}
+
+              {currentSection === 'contact' && (
+                <motion.div
+                  key="contact"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-8"
+                >
+                  <TerminalCommand 
+                    command="cat contact.txt"
+                    output={
+                      <div className="space-y-6">
+                        <h2 className="text-2xl font-bold text-white mb-6">Get In Touch</h2>
+                        <p className="text-gray-300 leading-relaxed mb-8">
+                          Ready to collaborate on your next project? Let's discuss how my expertise 
+                          in automation, cloud services, and IT support can help solve your technical challenges.
+                        </p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="bg-gray-900/50 p-6 rounded-lg border border-purple-500/30">
+                            <h3 className="text-lg font-semibold text-white mb-4">Professional</h3>
+                            <div className="space-y-3">
+                              <a href="https://github.com/x0VIER" className="flex items-center space-x-3 text-gray-300 hover:text-purple-400 transition-colors">
+                                <Github className="w-5 h-5" />
+                                <span>GitHub Profile</span>
+                              </a>
+                              <a href="#" className="flex items-center space-x-3 text-gray-300 hover:text-purple-400 transition-colors">
+                                <Mail className="w-5 h-5" />
+                                <span>Email</span>
+                              </a>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-gray-900/50 p-6 rounded-lg border border-purple-500/30">
+                            <h3 className="text-lg font-semibold text-white mb-4">Expertise</h3>
+                            <div className="space-y-2 text-sm">
+                              <div className="text-purple-400">• IT Infrastructure & Support</div>
+                              <div className="text-purple-400">• Cloud Architecture (AWS)</div>
+                              <div className="text-purple-400">• Python Automation</div>
+                              <div className="text-purple-400">• Cybersecurity Solutions</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
-      </footer>
+      </div>
     </div>
   )
 }
